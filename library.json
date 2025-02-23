@@ -1,0 +1,29 @@
+{
+  "name": "aws-iot-core",
+  "version": "1.0.0",
+  "description": "A",
+  "keywords": "",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/username/hello-world.git"
+  },
+  "authors": [
+    {
+      "name": "Yunarta Kartawahyudi",
+      "email": "yunarta.kartawahyudi@gmail.com",
+      "url": "https://github.com/yunarta",
+      "maintainer": true
+    }
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/yunarta/",
+  "dependencies": {
+    "ArduinoJson": "~7.3.0",
+    "Array": "~1.2.1",
+    "FS": "",
+    "LittleFS": "",
+    "PubSubClient": "~2.8"
+  },
+  "frameworks": "*",
+  "platforms": "*"
+}
