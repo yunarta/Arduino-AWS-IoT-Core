@@ -14,10 +14,12 @@ class FleetProvisioningClient;
 class ThingClient;
 
 typedef bool (*ThingClientCallback)(String topic, JsonDocument payload);
+typedef bool (*ThingClientShadowCallback)(String shadowName, JsonObject payload);
 
 class ThingClient {
 private:
   ThingClientCallback callback;
+  ThingClientShadowCallback shadowCallback;
   JsonDocument shadows;
 
   PubSubClient* client;
@@ -26,17 +28,19 @@ private:
   bool isRunning;
   bool isClassicReceived;
 
-  void replyShadow(String topic, String replyTopic, JsonDocument payload);
 
 public:
   ThingClient(PubSubClient* client, String thingName);
 
-  void registerShadow(String shadowName);
+  void registerShadow(const String &shadowName);
+  void updateShadow(const String &shadowName, JsonObject payload);
+  JsonObject getShadow(const String &shadowName);
 
   void begin();
   void end();
 
   void setCallback(ThingClientCallback callback);
+  void setShadowCallback(ThingClientShadowCallback callback);
   bool onMessage(String topic, JsonDocument payload);
 
   void loop();
