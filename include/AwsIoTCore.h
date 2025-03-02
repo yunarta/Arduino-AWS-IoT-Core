@@ -13,8 +13,8 @@ class FleetProvisioningClient;
 
 class ThingClient;
 
-typedef bool (*ThingClientCallback)(String topic, JsonDocument payload);
-typedef bool (*ThingClientShadowCallback)(String shadowName, JsonObject payload);
+typedef bool (*ThingClientCallback)(const String &topic, JsonDocument payload);
+typedef bool (*ThingClientShadowCallback)(const String &shadowName, JsonObject payload);
 
 class ThingClient {
 private:
@@ -46,7 +46,7 @@ public:
   void loop();
 };
 
-typedef bool (*FleetProvisioningClientCallback)(String topic, JsonDocument payload);
+typedef bool (*FleetProvisioningClientCallback)(const String &topic, JsonDocument payload);
 
 class FleetProvisioningClient {
 private:
