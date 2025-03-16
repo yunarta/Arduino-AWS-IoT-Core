@@ -4,4 +4,3 @@
 
 #include "AwsIoTCore.h"
 
-#include <LittleFS.h>

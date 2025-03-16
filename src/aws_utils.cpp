@@ -4,6 +4,7 @@
 
 #include <Arduino.h>
 #include "aws_utils.h"
+#include "WiFi.h"
 
 String StringPrintF(const char *format, ...) {
     if (!format) return String("");  // Handle null format safely
@@ -31,4 +32,11 @@ String StringPrintF(const char *format, ...) {
     delete[] buffer;        // Free dynamically allocated memory
 
     return result;
+}
+
+String thingNameWithMac(const char *name) {
+    char buffer[256];
+    snprintf(buffer, sizeof(buffer), "%s-%s", name, WiFi.macAddress().c_str());
+
+    return {buffer};
 }

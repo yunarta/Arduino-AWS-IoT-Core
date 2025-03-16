@@ -13,63 +13,75 @@ class FleetProvisioningClient;
 
 class ThingClient;
 
-typedef bool (*ThingClientCallback)(const String &topic, JsonDocument payload);
-typedef bool (*ThingClientShadowCallback)(const String &shadowName, JsonObject payload);
+// typedef bool (*ThingClientCallback)(const String &topic, JsonDocument payload);
+#define ThingClientCallback std::function<bool(const String &shadowName, JsonDocument &payload)>
+
+// typedef bool (*ThingClientShadowCallback)(const String &shadowName, const JsonObject &payload);
+#define ThingClientShadowCallback std::function<bool(const String &shadowName, JsonObject &payload)>
+
 
 class ThingClient {
 private:
-  ThingClientCallback callback;
-  ThingClientShadowCallback shadowCallback;
-  JsonDocument shadows;
+    ThingClientCallback callback;
+    ThingClientShadowCallback shadowCallback;
+    JsonDocument shadows;
 
-  PubSubClient* client;
-  String thingName;
+    PubSubClient *client;
+    String thingName;
 
-  bool isRunning;
-  bool isClassicReceived;
-
+    bool isRunning;
+    bool isClassicReceived;
 
 public:
-  ThingClient(PubSubClient* client, String thingName);
+    ThingClient(PubSubClient *client, const String &thingName);
 
-  void registerShadow(const String &shadowName);
-  void updateShadow(const String &shadowName, JsonObject payload);
-  JsonObject getShadow(const String &shadowName);
+    void registerShadow(const String &shadowName);
 
-  void begin();
-  void end();
+    void updateShadow(const String &shadowName, JsonObject &payload);
 
-  void setCallback(ThingClientCallback callback);
-  void setShadowCallback(ThingClientShadowCallback callback);
-  bool onMessage(String topic, JsonDocument payload);
+    JsonObject getShadow(const String &shadowName);
 
-  void loop();
+    void begin();
+
+    void end();
+
+    void setCallback(ThingClientCallback callback);
+
+    void setShadowCallback(ThingClientShadowCallback callback);
+
+    bool onMessage(const String &topic, JsonDocument &payload);
+
+    void loop();
 };
 
-typedef bool (*FleetProvisioningClientCallback)(const String &topic, JsonDocument payload);
+// typedef bool (*FleetProvisioningClientCallback)(const String &topic, const JsonDocument &payload);
+#define FleetProvisioningClientCallback std::function<bool(const String &topic,  JsonDocument &payload)>
 
 class FleetProvisioningClient {
-private:
-  FleetProvisioningClientCallback callback;
+    PubSubClient *client;
+    String provisioningName;
+    String thingName;
 
-  PubSubClient* client;
-  String provisioningName;
-  String thingName;
+    bool isRunning;
 
-  bool isRunning;
+    void saveCertificate(JsonDocument &payload);
 
-  void saveCertificate(JsonDocument payload);
-  void requestProvisioning(JsonDocument payload);
-  bool acceptProvisioning(JsonDocument payload);
+    void requestProvisioning(JsonDocument &payload);
+
+    bool acceptProvisioning(JsonDocument &payload);
+
+    FleetProvisioningClientCallback callback;
 
 public:
-  FleetProvisioningClient(PubSubClient* client, String provisioningName, String thingName);
+    FleetProvisioningClient(PubSubClient *client, const String &provisioningName, const String &thingName);
 
-  void begin();
-  void end();
+    void begin();
 
-  void setCallback(FleetProvisioningClientCallback callback);
-  bool onMessage(String topic, JsonDocument payload);
+    void end();
+
+    void setCallback(FleetProvisioningClientCallback callback);
+
+    bool onMessage(const String &topic, JsonDocument &payload);
 };
 
 

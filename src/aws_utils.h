@@ -3,4 +3,6 @@
 
 String StringPrintF(const char *format, ...);
 
+String thingNameWithMac(const char *name);
+
 #endif
