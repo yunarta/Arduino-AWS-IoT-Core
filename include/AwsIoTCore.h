@@ -17,12 +17,26 @@ class ThingClient;
 #define ThingClientCallback std::function<bool(const String &shadowName, JsonDocument &payload)>
 
 // typedef bool (*ThingClientShadowCallback)(const String &shadowName, const JsonObject &payload);
+#define ThingClientCommandCallback std::function<bool(const String &executionId, JsonDocument &payload)>
+
+// typedef bool (*ThingClientShadowCallback)(const String &shadowName, const JsonObject &payload);
+#define ThingClientJobsCallback std::function<bool(const String &jobId, JsonDocument &payload)>
+
+// typedef bool (*ThingClientShadowCallback)(const String &shadowName, const JsonObject &payload);
 #define ThingClientShadowCallback std::function<bool(const String &shadowName, JsonObject &payload)>
 
+struct CommandReply {
+    String status;
+    String statusCode;
+    String statusReason;
+    JsonDocument result;
+};
 
 class ThingClient {
 private:
     ThingClientCallback callback;
+    ThingClientCommandCallback commandCallback;
+    ThingClientJobsCallback jobsCallback;
     ThingClientShadowCallback shadowCallback;
     JsonDocument shadows;
 
@@ -32,20 +46,40 @@ private:
     bool isRunning;
     bool isClassicReceived;
 
+    bool processCommandMessage(const String &topic, JsonDocument &payload);
+    bool processJobMessage(const String &topic, JsonDocument &payload);
+    bool processShadowMessage(const String &topic, JsonDocument &payload);
+
 public:
     ThingClient(PubSubClient *client, const String &thingName);
 
     void registerShadow(const String &shadowName);
 
+    void preloadShadow(const String &shadowName, JsonObject &payload);
+
+    bool isValidated(const String &shadowName);
+
+    void preloadedShadowValidated(const String &shadowName);
+
     void updateShadow(const String &shadowName, JsonObject &payload);
 
     JsonObject getShadow(const String &shadowName);
+
+    void listPendingJobs();
+
+    void startPendingJobs(unsigned int startPendingJobs = 0);
+
+    void commandReply(const String &executionId, const CommandReply &payload);
 
     void begin();
 
     void end();
 
     void setCallback(ThingClientCallback callback);
+
+    void setCommandCallback(ThingClientCommandCallback callback);
+
+    void setJobsCallback(ThingClientJobsCallback callback);
 
     void setShadowCallback(ThingClientShadowCallback callback);
 
