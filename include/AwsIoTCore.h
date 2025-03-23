@@ -32,6 +32,12 @@ struct CommandReply {
     JsonDocument result;
 };
 
+struct JobReply {
+    String status;
+    long expectedVersion;
+    JsonDocument statusDetails;
+};
+
 class ThingClient {
 private:
     ThingClientCallback callback;
@@ -47,7 +53,9 @@ private:
     bool isClassicReceived;
 
     bool processCommandMessage(const String &topic, JsonDocument &payload);
+
     bool processJobMessage(const String &topic, JsonDocument &payload);
+
     bool processShadowMessage(const String &topic, JsonDocument &payload);
 
 public:
@@ -70,6 +78,10 @@ public:
     void startPendingJobs(unsigned int startPendingJobs = 0);
 
     void commandReply(const String &executionId, const CommandReply &payload);
+
+    void jobReply(const String &jobId, const JobReply &payload);
+
+    void requestJobDetail(const String &jobId);
 
     void begin();
 

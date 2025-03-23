@@ -30,9 +30,10 @@ void ThingClient::begin() {
              this->thingName.c_str());
     this->client->subscribe(commandTopic, 1.0);
 
-    snprintf(commandTopic, sizeof(commandTopic), "$aws/things/%s/jobs/notify",
-             this->thingName.c_str());
-    this->client->subscribe(commandTopic, 1.0);
+    auto jobsTopic = StringPrintF("$aws/things/%s", this->thingName.c_str());
+
+    this->client->subscribe((jobsTopic + "/jobs/notify").c_str(), 1.0);
+    this->client->subscribe((jobsTopic + "/jobs/+/get/accepted").c_str(), 1.0);
 
 #ifdef LOG_INFO
     Serial.println("[INFO] ThingClient started.");
@@ -84,7 +85,7 @@ void ThingClient::registerShadow(const String &shadowName) {
                                       this->thingName.c_str(),
                                       shadowName.c_str());
 
-    this->shadows[shadowName]["timestamp"] = millis();;
+    this->shadows[shadowName]["timestamp"] = 0L;
 
     this->client->subscribe((shadowTopic + "/get/accepted").c_str(), 1.0);
     this->client->subscribe((shadowTopic + "/get/rejected").c_str(), 1.0);
@@ -194,6 +195,42 @@ void ThingClient::commandReply(const String &executionId, const CommandReply &pa
     this->client->publish(topic.c_str(), jsonString.c_str());
 }
 
+void ThingClient::jobReply(const String &jobId, const JobReply &payload) {
+    String topic = StringPrintF("$aws/things/%s/jobs/%s/update",
+                                this->thingName.c_str(),
+                                jobId.c_str()
+    );
+
+    JsonDocument doc;
+    String jsonString;
+
+    doc["status"] = payload.status;
+    doc["statusDetails"] = payload.statusDetails;
+    doc["expectedVersion"] = payload.expectedVersion;
+
+    serializeJson(doc, jsonString);
+
+    this->client->publish(topic.c_str(), jsonString.c_str());
+}
+
+void ThingClient::requestJobDetail(const String &jobId) {
+    String topic = StringPrintF("$aws/things/%s/jobs/%s/get",
+                                this->thingName.c_str(),
+                                jobId.c_str()
+    );
+
+    JsonDocument doc;
+    String jsonString;
+
+    doc["thingName"] = thingName;
+    doc["includeJobDocument"] = true;
+    doc["clientToken"] = thingName;
+    doc["jobId"] = jobId;
+    serializeJson(doc, jsonString);
+
+    this->client->publish(topic.c_str(), jsonString.c_str());
+}
+
 bool ThingClient::processCommandMessage(const String &topic, JsonDocument &payload) {
     char commandPrefix[1024];
     String executionId;
@@ -243,7 +280,9 @@ bool ThingClient::processJobMessage(const String &topic, JsonDocument &payload) 
         } else if (topic.endsWith("/get/accepted")) {
             // handle /get/accepted (job detail)
             jobId = topic.substring(nameOffset, topic.length() - 13);
-
+            if (jobsCallback != nullptr) {
+                jobsCallback(jobId, payload);
+            }
             return true;
         } else if (topic.endsWith("/update/accepted")) {
             // handle /get/accepted (job update)
@@ -332,15 +371,23 @@ bool ThingClient::onMessage(const String &topic, JsonDocument &payload) {
 
 void ThingClient::loop() {
     if (this->isRunning) {
-        unsigned long now = millis();
+        unsigned long now = millis() + 10000L;
 
         for (JsonPair kv: this->shadows.as<JsonObject>()) {
             auto key = kv.key();
             auto shadow = this->shadows[key].as<JsonObject>();
+
+#ifdef LOG_TRACE
+            Serial.printf("[DEBUG] Visiting shadow '%s'.\n", key.c_str());
+#endif
             if (shadow["loaded"].isNull()) {
                 auto time = shadow["timestamp"].as<unsigned long>();
-                if (now - time > 10 * 1000) {
-                    shadow["timestamp"] = millis();
+
+#ifdef LOG_TRACE
+                Serial.printf("[DEBUG] Checking if we can start sending out %ul, %ul, %d\n", now, time, (now - time) > 10 * 1000);
+#endif
+                if (now - time > 10 * 1000L) {
+                    shadow["timestamp"] = millis() + 10000L;
                     String shadowTopic = StringPrintF("$aws/things/%s/shadow/name/%s/get",
                                                       this->thingName.c_str(),
                                                       key.c_str());
