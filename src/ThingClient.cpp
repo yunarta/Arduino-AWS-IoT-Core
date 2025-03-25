@@ -92,6 +92,7 @@ void ThingClient::registerShadow(const String &shadowName) {
     this->client->subscribe((shadowTopic + "/update/delta").c_str(), 1.0);
     this->client->subscribe((shadowTopic + "/update/accepted").c_str(), 1.0);
     this->client->subscribe((shadowTopic + "/update/rejected").c_str(), 1.0);
+    this->client->subscribe((shadowTopic + "/update/delta").c_str(), 1.0);
     this->client->subscribe((shadowTopic + "/update/documents").c_str(), 1.0);
 
 #ifdef LOG_INFO
@@ -101,6 +102,13 @@ void ThingClient::registerShadow(const String &shadowName) {
 
 void ThingClient::preloadShadow(const String &shadowName, JsonObject &payload) {
     this->shadows[shadowName]["state"] = payload;
+}
+
+void ThingClient::requestShadow(const String &shadowName) {
+    String shadowTopic = StringPrintF("$aws/things/%s/shadow/name/%s/get",
+                                                      this->thingName.c_str(),
+                                                      shadowName.c_str());
+    this->client->publish(shadowTopic.c_str(), "{}");
 }
 
 bool ThingClient::isValidated(const String &shadowName) {
@@ -147,17 +155,20 @@ JsonObject ThingClient::getShadow(const String &shadowName) {
 }
 
 void ThingClient::listPendingJobs() {
-    String topic = StringPrintF("$aws/things/%s/jobs/get",
-                                this->thingName.c_str()
-    );
+    if (!listPendingJobsRequested) {
+        String topic = StringPrintF("$aws/things/%s/jobs/get",
+                                    this->thingName.c_str()
+        );
 
-    JsonDocument payload;
-    String jsonString;
+        JsonDocument payload;
+        String jsonString;
 
-    payload["clientToken"] = thingName;
-    serializeJson(payload, jsonString);
+        payload["clientToken"] = thingName;
+        serializeJson(payload, jsonString);
 
-    this->client->publish(topic.c_str(), jsonString.c_str());
+        listPendingJobsRequested = true;
+        this->client->publish(topic.c_str(), jsonString.c_str());
+    }
 }
 
 void ThingClient::startPendingJobs(unsigned int timeout) {
@@ -266,6 +277,7 @@ bool ThingClient::processJobMessage(const String &topic, JsonDocument &payload) 
     if (topic.startsWith(commandPrefix)) {
         if (topic.endsWith("/jobs/get/accepted")) {
             // handle /jobs/get/accepted (list all jobs)
+            listPendingJobsRequested = false;
             if (jobsCallback != nullptr) {
                 jobsCallback("", payload);
             }
@@ -313,7 +325,7 @@ bool ThingClient::processShadowMessage(const String &topic, JsonDocument &payloa
 
                 String publishTopic = topic.substring(0, topic.length() - 13) + "/update";
                 if (this->shadowCallback != nullptr) {
-                    this->shadowCallback(shadowName, desired);
+                    this->shadowCallback(shadowName, desired, true);
                 }
 #ifdef LOG_INFO
                 Serial.printf("[INFO] Shadow '%s' GET accepted received.\n", shadowName.c_str());
@@ -322,13 +334,19 @@ bool ThingClient::processShadowMessage(const String &topic, JsonDocument &payloa
             }
         }
 
+        if (topic.endsWith("/update/delta")) {
+            this->shadows[shadowName]["delta"] = 1;
+        }
+
         if (topic.endsWith("/update/documents")) {
             JsonObject desired = payload["current"]["state"]["desired"];
             if (!desired.isNull()) {
                 shadowName = topic.substring(nameOffset, topic.length() - 17);
 
                 if (this->shadowCallback != nullptr) {
-                    this->shadowCallback(shadowName, desired);
+                    bool shouldMutate = this->shadows[shadowName]["delta"].as<int>() > 0;
+                    this->shadows[shadowName]["delta"] = 0;
+                    this->shadowCallback(shadowName, desired, shouldMutate);
                 }
 #ifdef LOG_INFO
                 Serial.printf("[INFO] Shadow '%s' UPDATE documents received.\n", shadowName.c_str());
@@ -388,11 +406,11 @@ void ThingClient::loop() {
 #endif
                 if (now - time > 10 * 1000L) {
                     shadow["timestamp"] = millis() + 10000L;
-                    String shadowTopic = StringPrintF("$aws/things/%s/shadow/name/%s/get",
-                                                      this->thingName.c_str(),
-                                                      key.c_str());
-                    this->client->publish(shadowTopic.c_str(), "{}");
-
+                    requestShadow(key.c_str());
+                    // String shadowTopic = StringPrintF("$aws/things/%s/shadow/name/%s/get",
+                    //                                   this->thingName.c_str(),
+                    //                                   key.c_str());
+                    // this->client->publish(shadowTopic.c_str(), "{}");
 #ifdef LOG_DEBUG
                     Serial.printf("[DEBUG] Requested state for shadow '%s'.\n", key.c_str());
 #endif

@@ -23,7 +23,7 @@ class ThingClient;
 #define ThingClientJobsCallback std::function<bool(const String &jobId, JsonDocument &payload)>
 
 // typedef bool (*ThingClientShadowCallback)(const String &shadowName, const JsonObject &payload);
-#define ThingClientShadowCallback std::function<bool(const String &shadowName, JsonObject &payload)>
+#define ThingClientShadowCallback std::function<bool(const String &shadowName, JsonObject &payload, bool shouldMutate)>
 
 struct CommandReply {
     String status;
@@ -51,6 +51,7 @@ private:
 
     bool isRunning;
     bool isClassicReceived;
+    bool listPendingJobsRequested;
 
     bool processCommandMessage(const String &topic, JsonDocument &payload);
 
@@ -68,6 +69,8 @@ public:
     bool isValidated(const String &shadowName);
 
     void preloadedShadowValidated(const String &shadowName);
+
+    void requestShadow(const String &shadowName);
 
     void updateShadow(const String &shadowName, JsonObject &payload);
 
