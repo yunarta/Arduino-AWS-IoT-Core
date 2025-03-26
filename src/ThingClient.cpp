@@ -105,10 +105,12 @@ void ThingClient::preloadShadow(const String &shadowName, JsonObject &payload) {
 }
 
 void ThingClient::requestShadow(const String &shadowName) {
-    String shadowTopic = StringPrintF("$aws/things/%s/shadow/name/%s/get",
-                                                      this->thingName.c_str(),
-                                                      shadowName.c_str());
-    this->client->publish(shadowTopic.c_str(), "{}");
+    if (this->client->connected()) {
+        String shadowTopic = StringPrintF("$aws/things/%s/shadow/name/%s/get",
+                                                          this->thingName.c_str(),
+                                                          shadowName.c_str());
+        this->client->publish(shadowTopic.c_str(), "{}");
+    }
 }
 
 bool ThingClient::isValidated(const String &shadowName) {
