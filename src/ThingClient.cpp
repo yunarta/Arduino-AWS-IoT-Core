@@ -13,10 +13,8 @@ ThingClient::ThingClient(PubSubClient *client, const String &thingName) {
     this->client = client;
     this->thingName = thingName;
     this->isRunning = false;
-    this->isClassicReceived = false;
     this->callback = nullptr;
     this->shadowCallback = nullptr;
-    this->listPendingJobsRequested = false;
 
 #ifdef LOG_INFO
     Serial.printf("[INFO] ThingClient initialized for thing: %s\n", thingName.c_str());
@@ -25,6 +23,8 @@ ThingClient::ThingClient(PubSubClient *client, const String &thingName) {
 
 void ThingClient::begin() {
     this->isRunning = true;
+    this->isClassicReceived = false;
+    this->listPendingJobsRequested = false;
 
     char commandTopic[1024];
     snprintf(commandTopic, sizeof(commandTopic), "$aws/commands/things/%s/executions/+/request/json",
