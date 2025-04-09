@@ -93,7 +93,6 @@ void ThingClient::registerShadow(const String &shadowName) {
     this->client->subscribe((shadowTopic + "/update/delta").c_str(), 1.0);
     this->client->subscribe((shadowTopic + "/update/accepted").c_str(), 1.0);
     this->client->subscribe((shadowTopic + "/update/rejected").c_str(), 1.0);
-    this->client->subscribe((shadowTopic + "/update/delta").c_str(), 1.0);
     this->client->subscribe((shadowTopic + "/update/documents").c_str(), 1.0);
 
 #ifdef LOG_INFO
@@ -338,7 +337,10 @@ bool ThingClient::processShadowMessage(const String &topic, JsonDocument &payloa
         }
 
         if (topic.endsWith("/update/delta")) {
+            shadowName = topic.substring(nameOffset, topic.length() - 13);
+
             this->shadows[shadowName]["delta"] = 1;
+            return true;
         }
 
         if (topic.endsWith("/update/documents")) {
@@ -348,6 +350,7 @@ bool ThingClient::processShadowMessage(const String &topic, JsonDocument &payloa
 
                 if (this->shadowCallback != nullptr) {
                     bool shouldMutate = this->shadows[shadowName]["delta"].as<int>() > 0;
+
                     this->shadows[shadowName]["delta"] = 0;
                     this->shadowCallback(shadowName, desired, shouldMutate);
                 }
