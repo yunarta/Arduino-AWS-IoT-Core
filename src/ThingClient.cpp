@@ -81,6 +81,10 @@ void ThingClient::setShadowCallback(ThingClientShadowCallback shadowCallback) {
 #endif
 }
 
+void ThingClient::setMessageCallback(ThingClientMessageCallback messageCallback) {
+    this->messageCallback = messageCallback;
+}
+
 void ThingClient::registerShadow(const String &shadowName) {
     String shadowTopic = StringPrintF("$aws/things/%s/shadow/name/%s",
                                       this->thingName.c_str(),
@@ -107,8 +111,8 @@ void ThingClient::preloadShadow(const String &shadowName, JsonObject &payload) {
 void ThingClient::requestShadow(const String &shadowName) {
     if (this->client->connected()) {
         String shadowTopic = StringPrintF("$aws/things/%s/shadow/name/%s/get",
-                                                          this->thingName.c_str(),
-                                                          shadowName.c_str());
+                                          this->thingName.c_str(),
+                                          shadowName.c_str());
         this->client->publish(shadowTopic.c_str(), "{}");
     }
 }
@@ -367,6 +371,10 @@ bool ThingClient::processShadowMessage(const String &topic, JsonDocument &payloa
     return false;
 }
 
+bool ThingClient::processMessage(const String &topic, JsonDocument &payload) {
+    return this->messageCallback(topic, payload);
+}
+
 bool ThingClient::onMessage(const String &topic, JsonDocument &payload) {
     if (!this->isRunning) {
 #ifdef LOG_DEBUG
@@ -384,6 +392,10 @@ bool ThingClient::onMessage(const String &topic, JsonDocument &payload) {
     }
 
     if (processJobMessage(topic, payload)) {
+        return true;
+    }
+
+    if (processMessage(topic, payload)) {
         return true;
     }
 

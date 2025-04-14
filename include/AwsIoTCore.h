@@ -25,6 +25,8 @@ class ThingClient;
 // typedef bool (*ThingClientShadowCallback)(const String &shadowName, const JsonObject &payload);
 #define ThingClientShadowCallback std::function<bool(const String &shadowName, JsonObject &payload, bool shouldMutate)>
 
+#define ThingClientMessageCallback std::function<bool(const String &shadowName, JsonDocument &payload)>
+
 struct CommandReply {
     String status;
     String statusCode;
@@ -44,6 +46,7 @@ private:
     ThingClientCommandCallback commandCallback;
     ThingClientJobsCallback jobsCallback;
     ThingClientShadowCallback shadowCallback;
+    ThingClientMessageCallback messageCallback;
     JsonDocument shadows;
 
     PubSubClient *client;
@@ -58,6 +61,8 @@ private:
     bool processJobMessage(const String &topic, JsonDocument &payload);
 
     bool processShadowMessage(const String &topic, JsonDocument &payload);
+
+    bool processMessage(const String &topic, JsonDocument &payload);
 
 public:
     ThingClient(PubSubClient *client, const String &thingName);
@@ -97,6 +102,8 @@ public:
     void setJobsCallback(ThingClientJobsCallback callback);
 
     void setShadowCallback(ThingClientShadowCallback callback);
+
+    void setMessageCallback(ThingClientMessageCallback callback);
 
     bool onMessage(const String &topic, JsonDocument &payload);
 
