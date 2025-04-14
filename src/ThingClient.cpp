@@ -261,7 +261,9 @@ bool ThingClient::processCommandMessage(const String &topic, JsonDocument &paylo
         if (topic.endsWith("/request/json")) {
             executionId = topic.substring(nameOffset, topic.length() - 13);
 
-            this->commandCallback(executionId, payload);
+            if (commandCallback != nullptr) {
+                this->commandCallback(executionId, payload);
+            }
             return true;
         }
     }
@@ -372,7 +374,9 @@ bool ThingClient::processShadowMessage(const String &topic, JsonDocument &payloa
 }
 
 bool ThingClient::processMessage(const String &topic, JsonDocument &payload) {
-    return this->messageCallback(topic, payload);
+    if (this->messageCallback != nullptr) {
+        return this->messageCallback(topic, payload);
+    }
 }
 
 bool ThingClient::onMessage(const String &topic, JsonDocument &payload) {
