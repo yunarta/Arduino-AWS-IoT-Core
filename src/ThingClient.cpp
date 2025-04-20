@@ -377,6 +377,8 @@ bool ThingClient::processMessage(const String &topic, JsonDocument &payload) {
     if (this->messageCallback != nullptr) {
         return this->messageCallback(topic, payload);
     }
+
+    return false;
 }
 
 bool ThingClient::onMessage(const String &topic, JsonDocument &payload) {
