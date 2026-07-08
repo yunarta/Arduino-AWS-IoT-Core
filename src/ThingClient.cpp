@@ -9,12 +9,9 @@
 
 #include <LittleFS.h>
 
-ThingClient::ThingClient(PubSubClient *client, const String &thingName) {
-    this->client = client;
-    this->thingName = thingName;
-    this->isRunning = false;
-    this->callback = nullptr;
-    this->shadowCallback = nullptr;
+ThingClient::ThingClient(PubSubClient *client, const String &thingName)
+    : callback(nullptr), commandCallback(nullptr), jobsCallback(nullptr), shadowCallback(nullptr), messageCallback(nullptr),
+      client(client), thingName(thingName), isRunning(false), isClassicReceived(false), listPendingJobsRequested(false) {
 
 #ifdef LOG_INFO
     Serial.printf("[INFO] ThingClient initialized for thing: %s\n", thingName.c_str());

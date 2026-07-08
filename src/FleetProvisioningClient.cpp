@@ -12,12 +12,8 @@
 #define KEYSTORE_FILE "/tmp/aws-keystore.json"
 
 FleetProvisioningClient::FleetProvisioningClient(PubSubClient *client, const String &provisioningName,
-                                                 const String &thingName) {
-    this->client = client;
-    this->provisioningName = provisioningName;
-    this->thingName = thingName;
-    this->isRunning = false;
-    this->callback = nullptr;
+                                                 const String &thingName)
+    : client(client), provisioningName(provisioningName), thingName(thingName), isRunning(false), callback(nullptr) {
 
 #ifdef LOG_INFO
     Serial.println(F("[INFO] FleetProvisioningClient initialized"));
